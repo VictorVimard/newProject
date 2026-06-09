@@ -1,0 +1,4 @@
+# Local API key helpers
+.env
+.env.*
+*.local
