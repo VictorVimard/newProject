@@ -3,6 +3,10 @@ let directionsRenderer;
 let selectedActivities = [];
 let currentDay = 1;
 let currentMarkers = [];
+const DAILY_TIME_BUDGET_MINUTES = 8 * 60;
+const STORAGE_KEY = 'roadtrip_selection_state_v1';
+let daySelections = {};
+let activityAssignments = {};
 
 function loadGoogleMapsApi() {
     return new Promise((resolve, reject) => {
@@ -28,6 +32,8 @@ function loadGoogleMapsApi() {
 }
 
 function init() {
+    initializePlanningState();
+
     loadGoogleMapsApi()
         .then(() => {
             renderDaysList();
@@ -44,11 +50,204 @@ function init() {
         });
 }
 
+function initializePlanningState() {
+    roadTripData.days.forEach((day) => {
+        day.activities.forEach((activity) => {
+            activity.canonicalKey = getActivityCanonicalKey(activity);
+            activity.durationMinutes = getActivityDurationMinutes(activity.duration);
+        });
+    });
+
+    hydratePlanningState();
+    selectedActivities = getSelectedActivitiesForDay(currentDay);
+}
+
+function hydratePlanningState() {
+    const defaultSelections = {};
+    roadTripData.days.forEach((day) => {
+        defaultSelections[day.id] = [];
+    });
+
+    daySelections = defaultSelections;
+    activityAssignments = {};
+
+    let rawState = null;
+    try {
+        rawState = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    } catch {
+        rawState = null;
+    }
+
+    if (rawState && rawState.daySelections) {
+        Object.entries(rawState.daySelections).forEach(([dayId, activityIds]) => {
+            const numericDayId = Number(dayId);
+            const day = getDayById(numericDayId);
+            if (!day || !Array.isArray(activityIds)) {
+                return;
+            }
+
+            const validIds = [];
+            activityIds.forEach((activityId) => {
+                const activity = day.activities.find((candidate) => candidate.id === activityId);
+                if (!activity) {
+                    return;
+                }
+
+                const assignedDay = activityAssignments[activity.canonicalKey];
+                if (assignedDay && assignedDay !== numericDayId) {
+                    return;
+                }
+
+                activityAssignments[activity.canonicalKey] = numericDayId;
+                validIds.push(activityId);
+            });
+
+            daySelections[numericDayId] = validIds;
+        });
+    }
+
+    persistPlanningState();
+}
+
+function persistPlanningState() {
+    try {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                daySelections,
+                activityAssignments
+            })
+        );
+    } catch {
+        // Ignore persistence failures (private browsing, quota, etc.).
+    }
+}
+
+function getDayById(dayId) {
+    return roadTripData.days.find((day) => day.id === dayId);
+}
+
+function getSelectedActivitiesForDay(dayId) {
+    return [...(daySelections[dayId] || [])];
+}
+
+function normalizeText(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function getActivityCanonicalKey(activity) {
+    if (activity.groupKey) {
+        return normalizeText(activity.groupKey);
+    }
+
+    const roundedLat = Number(activity.lat || 0).toFixed(3);
+    const roundedLng = Number(activity.lng || 0).toFixed(3);
+    return `${normalizeText(activity.name)}-${roundedLat}-${roundedLng}`;
+}
+
+function isActivityLockedForDay(activity, dayId) {
+    const assignedDay = activityAssignments[activity.canonicalKey];
+    return Boolean(assignedDay && assignedDay !== dayId);
+}
+
+function getActivityLockedDay(activity) {
+    return activityAssignments[activity.canonicalKey] || null;
+}
+
+function parseHourMinuteText(text) {
+    const hourMinutePattern = /(\d+)\s*h\s*(\d+)?/i;
+    const minutePattern = /(\d+)\s*min/i;
+
+    const hourMatch = text.match(hourMinutePattern);
+    const minuteMatch = text.match(minutePattern);
+
+    let total = 0;
+    if (hourMatch) {
+        total += Number(hourMatch[1]) * 60;
+        if (hourMatch[2]) {
+            total += Number(hourMatch[2]);
+        }
+    }
+
+    if (!hourMatch && minuteMatch) {
+        total += Number(minuteMatch[1]);
+    }
+
+    return total;
+}
+
+function getActivityDurationMinutes(durationLabel) {
+    const text = String(durationLabel || '').toLowerCase();
+    if (!text) {
+        return 90;
+    }
+
+    if (text.includes('-')) {
+        const parts = text.split('-').map((part) => part.trim());
+        const minPart = parseHourMinuteText(parts[0]);
+        const maxPart = parseHourMinuteText(parts[1]);
+        if (minPart > 0 && maxPart > 0) {
+            return Math.round((minPart + maxPart) / 2);
+        }
+    }
+
+    const parsedValue = parseHourMinuteText(text);
+    if (parsedValue > 0) {
+        return parsedValue;
+    }
+
+    return 90;
+}
+
+function haversineDistanceKm(origin, destination) {
+    const toRad = (angle) => (angle * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+
+    const latDiff = toRad(destination.lat - origin.lat);
+    const lngDiff = toRad(destination.lng - origin.lng);
+
+    const a =
+        Math.sin(latDiff / 2) * Math.sin(latDiff / 2) +
+        Math.cos(toRad(origin.lat)) * Math.cos(toRad(destination.lat)) *
+        Math.sin(lngDiff / 2) * Math.sin(lngDiff / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadiusKm * c;
+}
+
+function estimateDriveMinutes(origin, destination) {
+    const distanceKm = haversineDistanceKm(origin, destination);
+    const averageRoadSpeedKmPerHour = 55;
+    const baseMinutes = (distanceKm / averageRoadSpeedKmPerHour) * 60;
+    const fixedOverhead = 8;
+    return Math.max(5, Math.round(baseMinutes + fixedOverhead));
+}
+
+function formatMinutes(totalMinutes) {
+    const rounded = Math.max(0, Math.round(totalMinutes));
+    const hours = Math.floor(rounded / 60);
+    const minutes = rounded % 60;
+
+    if (hours === 0) {
+        return `${minutes} min`;
+    }
+    if (minutes === 0) {
+        return `${hours}h`;
+    }
+    return `${hours}h${String(minutes).padStart(2, '0')}`;
+}
+
 function renderDaysList() {
     const daysList = document.getElementById('daysList');
     daysList.innerHTML = '';
 
     roadTripData.days.forEach((day) => {
+        const selectedCount = getSelectedActivitiesForDay(day.id).length;
         const dayItem = document.createElement('div');
         dayItem.className = 'day-item';
         if (day.id === currentDay) dayItem.classList.add('active');
@@ -57,6 +256,7 @@ function renderDaysList() {
             <div class="day-title">Jour ${day.id}</div>
             <div class="day-title">${day.date}</div>
             <div class="accommodation-name">${day.accommodation.name}</div>
+            <div class="accommodation-name">Planifiees: ${selectedCount}</div>
         `;
 
         dayItem.addEventListener('click', () => selectDay(day.id));
@@ -66,7 +266,7 @@ function renderDaysList() {
 
 function selectDay(dayId) {
     currentDay = dayId;
-    selectedActivities = [];
+    selectedActivities = getSelectedActivitiesForDay(dayId);
 
     document.querySelectorAll('.day-item').forEach((item, idx) => {
         item.classList.toggle('active', idx + 1 === dayId);
@@ -81,7 +281,7 @@ function selectDay(dayId) {
     renderActivities(day);
 
     clearMap();
-    document.getElementById('chainsSection').innerHTML = '';
+    renderChains();
 }
 
 function renderAccommodationInfo(day) {
@@ -169,13 +369,20 @@ function renderActivities(day) {
         return;
     }
 
+    const dayStart = getDayStartLocation(day);
+
     day.activities.forEach((activity) => {
         const activityDiv = document.createElement('div');
         activityDiv.className = 'activity';
         activityDiv.id = `activity-${activity.id}`;
+        const isLocked = isActivityLockedForDay(activity, day.id);
+        const lockedDay = getActivityLockedDay(activity);
 
         if (selectedActivities.includes(activity.id)) {
             activityDiv.classList.add('selected');
+        }
+        if (isLocked) {
+            activityDiv.classList.add('unavailable');
         }
 
         const typeClass = activity.type === 'hike' ? 'hike' : 'site';
@@ -206,6 +413,20 @@ function renderActivities(day) {
                 : 'Reservation recommandee (parking/cable car/visite selon la saison).';
             extraInfo.push(`<div><strong>Reservation:</strong> ${reservationNote}</div>`);
         }
+        if (activity.bookingUrl) {
+            extraInfo.push(`<div><strong>Reservation en ligne:</strong> lien disponible</div>`);
+        }
+        if (Array.isArray(activity.bookingLinks) && activity.bookingLinks.length) {
+            extraInfo.push(`<div><strong>Reservations:</strong> ${activity.bookingLinks.length} lien(s) disponible(s)</div>`);
+        }
+
+        const driveEstimateMinutes = estimateDriveMinutes(dayStart, { lat: activity.lat, lng: activity.lng });
+        const totalEstimateMinutes = driveEstimateMinutes + activity.durationMinutes;
+
+        if (isLocked) {
+            extraInfo.push(`<div><strong>Indisponible:</strong> deja planifiee au jour ${lockedDay}.</div>`);
+        }
+
         const extraInfoHtml = extraInfo.length
             ? `<div class="activity-extra">${extraInfo.join('')}</div>`
             : '';
@@ -214,23 +435,32 @@ function renderActivities(day) {
             ? `<button class="btn btn-info" onclick="openWalkRoute('${activity.id}')">Itineraire a pied</button>`
             : '';
 
+        const reservationButtonHtml = (activity.reservation || activity.bookingUrl || (Array.isArray(activity.bookingLinks) && activity.bookingLinks.length))
+            ? `<button class="btn btn-chain" onclick="openBookingLinks('${activity.id}')">Reservation</button>`
+            : '';
+
         activityDiv.innerHTML = `
             <div class="activity-name">${activity.name}</div>
             <span class="activity-type ${typeClass}">${typeLabel}</span>
             ${badges}
             <div class="activity-duration">Duree: ${activity.duration} | Distance: ${activity.distance}</div>
+            <div class="activity-distance">Trajet estime: ${formatMinutes(driveEstimateMinutes)} | Temps total estime: ${formatMinutes(totalEstimateMinutes)}</div>
             <div class="activity-description">${activity.description}</div>
             ${extraInfoHtml}
             <div class="activity-buttons">
                 <button class="btn btn-info" onclick="showActivityOnMap('${activity.id}')">Voir dans la carte</button>
                 <button class="btn btn-maps" onclick="openInGoogleMaps('${activity.id}')">Ouvrir Google Maps</button>
                 ${walkButtonHtml}
+                ${reservationButtonHtml}
             </div>
         `;
 
         activityDiv.addEventListener('click', (e) => {
             if (!e.target.closest('.btn')) {
-                toggleActivitySelection(activity.id, activityDiv);
+                if (isLocked && !selectedActivities.includes(activity.id)) {
+                    return;
+                }
+                toggleActivitySelection(activity.id);
                 showActivityOnMap(activity.id);
             }
         });
@@ -239,15 +469,35 @@ function renderActivities(day) {
     });
 }
 
-function toggleActivitySelection(activityId, element) {
-    if (selectedActivities.includes(activityId)) {
-        selectedActivities = selectedActivities.filter((id) => id !== activityId);
-        element.classList.remove('selected');
-    } else {
-        selectedActivities.push(activityId);
-        element.classList.add('selected');
+function toggleActivitySelection(activityId) {
+    const day = getDayById(currentDay);
+    const activity = day.activities.find((candidate) => candidate.id === activityId);
+    if (!activity) {
+        return;
     }
 
+    const currentSelections = getSelectedActivitiesForDay(currentDay);
+    const isSelected = currentSelections.includes(activityId);
+
+    if (isSelected) {
+        daySelections[currentDay] = currentSelections.filter((id) => id !== activityId);
+        if (activityAssignments[activity.canonicalKey] === currentDay) {
+            delete activityAssignments[activity.canonicalKey];
+        }
+    } else {
+        const lockedDay = activityAssignments[activity.canonicalKey];
+        if (lockedDay && lockedDay !== currentDay) {
+            return;
+        }
+
+        daySelections[currentDay] = [...currentSelections, activityId];
+        activityAssignments[activity.canonicalKey] = currentDay;
+    }
+
+    selectedActivities = getSelectedActivitiesForDay(currentDay);
+    persistPlanningState();
+    renderDaysList();
+    renderActivities(day);
     renderChains();
 }
 
@@ -346,18 +596,152 @@ function getActivityInfo(activityId) {
     window.open(searchUrl, '_blank');
 }
 
+function openBookingLinks(activityId) {
+    const day = roadTripData.days[currentDay - 1];
+    const activity = day.activities.find((a) => a.id === activityId);
+    if (!activity) return;
+
+    if (activity.bookingUrl) {
+        window.open(activity.bookingUrl, '_blank');
+        return;
+    }
+
+    if (Array.isArray(activity.bookingLinks) && activity.bookingLinks.length) {
+        const firstLink = activity.bookingLinks[0];
+        if (typeof firstLink === 'string') {
+            window.open(firstLink, '_blank');
+            return;
+        }
+        if (firstLink && firstLink.url) {
+            window.open(firstLink.url, '_blank');
+            return;
+        }
+    }
+
+    const searchQuery = `reservation ${activity.name} ${day.accommodation.location}`;
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+}
+
+function getOrderedSelectedActivities(day) {
+    return getSelectedActivitiesForDay(day.id)
+        .map((id) => day.activities.find((activity) => activity.id === id))
+        .filter(Boolean);
+}
+
+function calculateDayPlanMetrics(day, orderedActivities) {
+    const start = getDayStartLocation(day);
+    const end = {
+        lat: day.accommodation.lat,
+        lng: day.accommodation.lng
+    };
+
+    const legs = [];
+    let travelMinutes = 0;
+    let activityMinutes = 0;
+
+    let previousPoint = {
+        lat: start.lat,
+        lng: start.lng,
+        label: `Depart: ${start.name}`
+    };
+
+    orderedActivities.forEach((activity, index) => {
+        const currentPoint = {
+            lat: activity.lat,
+            lng: activity.lng,
+            label: `${index + 1}. ${activity.name}`
+        };
+
+        const legMinutes = estimateDriveMinutes(previousPoint, currentPoint);
+        travelMinutes += legMinutes;
+        activityMinutes += activity.durationMinutes;
+
+        legs.push({
+            from: previousPoint.label,
+            to: currentPoint.label,
+            minutes: legMinutes
+        });
+
+        previousPoint = currentPoint;
+    });
+
+    const returnMinutes = estimateDriveMinutes(previousPoint, {
+        lat: end.lat,
+        lng: end.lng,
+        label: `Arrivee: ${day.accommodation.name}`
+    });
+
+    travelMinutes += returnMinutes;
+    legs.push({
+        from: previousPoint.label,
+        to: `Arrivee: ${day.accommodation.name}`,
+        minutes: returnMinutes
+    });
+
+    return {
+        travelMinutes,
+        activityMinutes,
+        totalMinutes: travelMinutes + activityMinutes,
+        budgetMinutes: DAILY_TIME_BUDGET_MINUTES,
+        legs
+    };
+}
+
+function optimizeSelectedActivitiesOrder() {
+    const day = roadTripData.days[currentDay - 1];
+    const activities = getOrderedSelectedActivities(day);
+
+    if (activities.length < 2) {
+        return;
+    }
+
+    const start = getDayStartLocation(day);
+    const remaining = [...activities];
+    const optimized = [];
+    let currentPoint = { lat: start.lat, lng: start.lng };
+
+    while (remaining.length) {
+        let bestIndex = 0;
+        let bestMinutes = Infinity;
+
+        remaining.forEach((activity, index) => {
+            const minutes = estimateDriveMinutes(currentPoint, {
+                lat: activity.lat,
+                lng: activity.lng
+            });
+
+            if (minutes < bestMinutes) {
+                bestMinutes = minutes;
+                bestIndex = index;
+            }
+        });
+
+        const [bestActivity] = remaining.splice(bestIndex, 1);
+        optimized.push(bestActivity);
+        currentPoint = { lat: bestActivity.lat, lng: bestActivity.lng };
+    }
+
+    daySelections[currentDay] = optimized.map((activity) => activity.id);
+    selectedActivities = getSelectedActivitiesForDay(currentDay);
+    persistPlanningState();
+    renderActivities(day);
+    renderChains();
+    showChainRouteOnMap();
+}
+
 function renderChains() {
     const day = roadTripData.days[currentDay - 1];
     const chainsSection = document.getElementById('chainsSection');
 
-    if (selectedActivities.length < 2) {
+    if (selectedActivities.length === 0) {
         chainsSection.innerHTML = '';
         return;
     }
 
-    const activities = selectedActivities
-        .map((id) => day.activities.find((a) => a.id === id))
-        .filter(Boolean);
+    const activities = getOrderedSelectedActivities(day);
+    const metrics = calculateDayPlanMetrics(day, activities);
+    const deltaBudget = metrics.budgetMinutes - metrics.totalMinutes;
+    const budgetOk = deltaBudget >= 0;
 
     const dayStart = getDayStartLocation(day);
     const stepLines = [
@@ -366,15 +750,35 @@ function renderChains() {
         `${activities.length + 1}. Arrivee: ${day.accommodation.name}`
     ];
 
+    const legLines = metrics.legs
+        .map((leg) => `${leg.from} -> ${leg.to}: ${formatMinutes(leg.minutes)}`)
+        .join('<br/>');
+
+    const mapButtons = activities.length >= 2
+        ? `
+            <button class="btn btn-info" style="margin-top: 8px;" onclick="showChainRouteOnMap()">Afficher la boucle sur la carte</button>
+            <button class="btn btn-maps" style="margin-top: 8px;" onclick="showChainRoute()">Ouvrir la boucle dans Google Maps</button>
+        `
+        : '';
+
     chainsSection.innerHTML = `
         <div class="chains-section">
-            <h4>Combiner les activites</h4>
+            <h4>Plan de journee</h4>
             <div class="chain-option">
-                <strong>Boucle complete (${activities.length} sites)</strong><br/>
-                ${activities.map((a, i) => `${i + 1}. ${a.name}`).join(' -> ')}<br/>
+                <strong>Activites selectionnees: ${activities.length}</strong><br/>
+                ${activities.map((a, i) => `${i + 1}. ${a.name}`).join(' -> ') || 'Selectionnez une activite'}<br/>
                 <div class="chain-steps">${stepLines.join('<br/>')}</div>
-                <button class="btn btn-info" style="margin-top: 8px;" onclick="showChainRouteOnMap()">Afficher la boucle sur la carte</button>
-                <button class="btn btn-maps" style="margin-top: 8px;" onclick="showChainRoute()">Ouvrir la boucle dans Google Maps</button>
+                <div class="planner-summary">
+                    <div><strong>Temps activites:</strong> ${formatMinutes(metrics.activityMinutes)}</div>
+                    <div><strong>Temps trajet estime:</strong> ${formatMinutes(metrics.travelMinutes)}</div>
+                    <div><strong>Total estime:</strong> ${formatMinutes(metrics.totalMinutes)} (budget ${formatMinutes(metrics.budgetMinutes)})</div>
+                    <div class="planner-status ${budgetOk ? 'ok' : 'over'}">
+                        ${budgetOk ? `Faisable, marge ${formatMinutes(deltaBudget)}` : `Depassement de ${formatMinutes(Math.abs(deltaBudget))}`}
+                    </div>
+                    <div class="chain-steps" style="margin-top: 8px;">${legLines}</div>
+                </div>
+                <button class="btn btn-info" style="margin-top: 8px;" onclick="optimizeSelectedActivitiesOrder()">Optimiser l'ordre</button>
+                ${mapButtons}
             </div>
         </div>
     `;
@@ -382,9 +786,7 @@ function renderChains() {
 
 function showChainRouteOnMap() {
     const day = roadTripData.days[currentDay - 1];
-    const activities = selectedActivities
-        .map((id) => day.activities.find((a) => a.id === id))
-        .filter(Boolean);
+    const activities = getOrderedSelectedActivities(day);
 
     if (activities.length < 2) return;
 
@@ -439,9 +841,7 @@ function showChainRouteOnMap() {
 
 function showChainRoute() {
     const day = roadTripData.days[currentDay - 1];
-    const activities = selectedActivities
-        .map((id) => day.activities.find((a) => a.id === id))
-        .filter(Boolean);
+    const activities = getOrderedSelectedActivities(day);
 
     if (activities.length < 2) return;
 
