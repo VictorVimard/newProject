@@ -499,7 +499,12 @@ function toggleActivitySelection(activityId) {
     renderDaysList();
     renderActivities(day);
     renderChains();
-    showActivityOnMap(activityId);
+
+    if (isSelected) {
+        resetMapToDayStart(day);
+    } else {
+        showActivityOnMap(activityId);
+    }
 }
 
 function initMap() {
@@ -525,6 +530,28 @@ function clearMap() {
     if (directionsRenderer) {
         directionsRenderer.setDirections({ routes: [] });
     }
+}
+
+function resetMapToDayStart(day) {
+    if (!map || !day) return;
+
+    const dayStart = getDayStartLocation(day);
+    const startLocation = { lat: dayStart.lat, lng: dayStart.lng };
+
+    if (directionsRenderer) {
+        directionsRenderer.setDirections({ routes: [] });
+    }
+
+    clearMapMarkers();
+    map.setZoom(11);
+    map.panTo(startLocation);
+
+    currentMarkers.push(new google.maps.Marker({
+        position: startLocation,
+        map,
+        title: dayStart.name,
+        icon: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
+    }));
 }
 
 function showActivityOnMap(activityId) {
