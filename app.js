@@ -458,10 +458,10 @@ function renderActivities(day) {
         activityDiv.addEventListener('click', (e) => {
             if (!e.target.closest('.btn')) {
                 if (isLocked && !selectedActivities.includes(activity.id)) {
+                    showActivityOnMap(activity.id);
                     return;
                 }
                 toggleActivitySelection(activity.id);
-                showActivityOnMap(activity.id);
             }
         });
 
@@ -499,6 +499,7 @@ function toggleActivitySelection(activityId) {
     renderDaysList();
     renderActivities(day);
     renderChains();
+    showActivityOnMap(activityId);
 }
 
 function initMap() {
