@@ -27,6 +27,7 @@ jobs:
           mkdir -p dist
           rsync -av --exclude '.git' --exclude '.github' --exclude 'dist' --exclude 'dist-src' ./ dist/
           sed -i "s|__GOOGLE_MAPS_API_KEY__|${{ secrets.GOOGLE_MAPS_API_KEY }}|g" dist/index.html
+          sed -i "s|__APP_VERSION__|${GITHUB_SHA}|g" dist/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
