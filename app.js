@@ -374,9 +374,9 @@ function getDayStartLocation(day) {
         };
     }
 
-    // Fallback: on transition days, start from the previous day's accommodation.
+    // Fallback: on transition days with travel info, start from the previous day's accommodation.
     const dayIndex = roadTripData.days.findIndex((d) => d.id === day.id);
-    if (dayIndex > 0) {
+    if (day.travelInfo && dayIndex > 0) {
         const prevDay = roadTripData.days[dayIndex - 1];
         if (prevDay && prevDay.accommodation && prevDay.accommodation.lat && prevDay.accommodation.lng) {
             return {

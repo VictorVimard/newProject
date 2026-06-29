@@ -401,8 +401,8 @@ const roadTripData = {
             accommodation: {
                 name: "Camping Sass Dlacia",
                 location: "San Cassiano, Trentin-Haut-Adige",
-                lat: 46.5500,
-                lng: 12.1500,
+                lat: 46.5534,
+                lng: 11.9706,
                 type: "Camping"
             },
             activities: [
@@ -505,8 +505,8 @@ const roadTripData = {
                     duration: "1h",
                     distance: "30 km route",
                     description: "Parcours montagneux à travers le Colle di Ra Gusela. Arrêts photographiques multiples.",
-                    lat: 46.5500,
-                    lng: 12.1500
+                    lat: 46.5534,
+                    lng: 11.9706
                 },
                 {
                     id: "7-5",
@@ -528,8 +528,8 @@ const roadTripData = {
             accommodation: {
                 name: "Camping Sass Dlacia",
                 location: "San Cassiano, Trentin-Haut-Adige",
-                lat: 46.5500,
-                lng: 12.1500,
+                lat: 46.5534,
+                lng: 11.9706,
                 type: "Camping"
             },
             activities: [
@@ -636,8 +636,8 @@ const roadTripData = {
                     duration: "1-2h",
                     distance: "Sur place",
                     description: "Petit-dejeuner long, courses, balade tres douce ou temps calme au camping pour rester frais avant la rando du soir.",
-                    lat: 46.5500,
-                    lng: 12.1500,
+                    lat: 46.5534,
+                    lng: 11.9706,
                     difficulty: "Facile"
                 },
                 {
