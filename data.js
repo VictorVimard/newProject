@@ -361,27 +361,6 @@ const roadTripData = {
                     reservationDetails: "Telepherique Marmolada: reserver un billet horaire a l'avance en haute saison."
                 },
                 {
-                    id: "6-2",
-                    name: "Tre Cime di Lavaredo - Sentier facile",
-                    type: "hike",
-                    duration: "4-5h",
-                    distance: "95 km route + 9.5 km marche",
-                    description: "Grande boucle classique au depart du Rifugio Auronzo. C'est l'acces routier payant a viser sur la carte.",
-                    lat: 46.6184,
-                    lng: 12.3035,
-                    difficulty: "Facile",
-                    groupKey: "auronzo-parking",
-                    choiceHint: "Vous pouvez faire Tre Cime seule, Cadini seule, ou les deux le meme jour. L'essentiel est le jour de reservation du parking Auronzo.",
-                    reservation: true,
-                    reservationDetails: "Route a peage du Rifugio Auronzo et parking a reserver/verifier tres tot en haute saison.",
-                    parking: "Parcheggio Rifugio Auronzo (acces payant, a reserver/verifier selon la date)",
-                    parkingLat: 46.6157,
-                    parkingLng: 12.3009,
-                    walkRoute: "Boucle classique Rifugio Auronzo -> Rifugio Lavaredo -> Forcella Lavaredo -> Rifugio Locatelli -> retour",
-                    walkDistance: "9.5 km",
-                    walkDuration: "3h15"
-                },
-                {
                     id: "6-3",
                     name: "Cadini di Misurina - Belvedere",
                     type: "hike",
@@ -439,7 +418,7 @@ const roadTripData = {
         {
             id: 7,
             date: "04/09",
-            title: "Jour 7 - Canazei → San Cassiano",
+            title: "Jour 7 - San Cassiano / Tre Cime di Lavaredo",
             accommodation: {
                 name: "Camping Sass Dlacia",
                 location: "San Cassiano, Trentin-Haut-Adige",
@@ -448,6 +427,27 @@ const roadTripData = {
                 type: "Camping"
             },
             activities: [
+                {
+                    id: "7-6",
+                    name: "Tre Cime di Lavaredo - Sentier facile",
+                    type: "hike",
+                    duration: "4-5h",
+                    distance: "40 km route + 9.5 km marche",
+                    description: "Grande boucle classique au depart du Rifugio Auronzo. Depuis le Camping Sass Dlacia, c'est la base la plus logique pour faire Tre Cime ce jour-la.",
+                    lat: 46.6184,
+                    lng: 12.3035,
+                    difficulty: "Facile",
+                    groupKey: "auronzo-parking",
+                    choiceHint: "Vous pouvez faire Tre Cime seule, Cadini seule, ou les deux le meme jour. L'essentiel est le jour de reservation du parking Auronzo.",
+                    reservation: true,
+                    reservationDetails: "Route a peage du Rifugio Auronzo et parking a reserver/verifier tres tot en haute saison.",
+                    parking: "Parcheggio Rifugio Auronzo (acces payant, a reserver/verifier selon la date)",
+                    parkingLat: 46.6157,
+                    parkingLng: 12.3009,
+                    walkRoute: "Boucle classique Rifugio Auronzo -> Rifugio Lavaredo -> Forcella Lavaredo -> Rifugio Locatelli -> retour",
+                    walkDistance: "9.5 km",
+                    walkDuration: "3h15"
+                },
                 {
                     id: "7-1",
                     name: "Lago di Braies",
@@ -652,64 +652,63 @@ const roadTripData = {
         {
             id: 9,
             date: "06/09",
-            title: "Jour 9 - Aventure Bivouac en Haute Montagne",
+            title: "Jour 9 - Bivouac Lago delle Baste / Mondeval",
             accommodation: {
-                name: "Bivouac",
-                location: "À définir - Sesto/Dolomites",
-                lat: 46.6333,
-                lng: 12.3333,
+                name: "Bivouac Lago delle Baste",
+                location: "Mondeval, départ Passo Giau",
+                lat: 46.4636,
+                lng: 12.0957,
                 type: "Bivouac sauvage"
             },
             activities: [
                 {
                     id: "9-1",
-                    name: "Tre Cime di Sumela - Randonnée intense",
+                    name: "Passo Giau -> Lago delle Baste",
                     type: "hike",
-                    duration: "4-5h",
-                    distance: "12-14 km",
-                    description: "Sentier alpin vers les trois pics. Attention: vérifiez les conditions. Chien doit être entraîné.",
-                    lat: 46.5833,
-                    lng: 12.0167,
-                    difficulty: "Difficile"
+                    duration: "2-3h",
+                    distance: "6-8 km marche",
+                    description: "Depart du Passo Giau vers le secteur de Mondeval et le Lago delle Baste, zone visee pour le bivouac.",
+                    lat: 46.4805,
+                    lng: 12.0656,
+                    difficulty: "Moderee"
                 },
                 {
                     id: "9-2",
-                    name: "Sorapis - Ascension",
-                    type: "hike",
-                    duration: "3-4h",
-                    distance: "8-10 km",
-                    description: "Randonnée alpine impressionnante. Phase d'escalade facile. Vue 360° en sommet.",
-                    lat: 46.5333,
-                    lng: 12.2000,
-                    difficulty: "Modérée"
+                    name: "Lago delle Baste - Repérage du bivouac",
+                    type: "site",
+                    duration: "1-2h",
+                    distance: "Autour du lac",
+                    description: "Installation discrète près du Lago delle Baste, en restant attentif à la réglementation locale et aux conditions du terrain.",
+                    lat: 46.4636,
+                    lng: 12.0957
                 },
                 {
                     id: "9-3",
-                    name: "Sesto - Sentier des trois pics",
+                    name: "Mondeval - boucle panoramique",
                     type: "hike",
                     duration: "2-3h",
-                    distance: "8 km",
-                    description: "Vue sur Tre Cime depuis le Nord. Moins touristique. Parfait pour bivouac.",
-                    lat: 46.6333,
-                    lng: 12.3333,
+                    distance: "5-7 km",
+                    description: "Balade autour du plateau de Mondeval avant la nuit, avec vues ouvertes sur le secteur de Croda da Lago.",
+                    lat: 46.4636,
+                    lng: 12.0957,
                     difficulty: "Modérée"
                 },
                 {
                     id: "9-4",
-                    name: "Installation bivouac sauvage",
+                    name: "Nuit au bivouac",
                     type: "site",
-                    duration: "2-3h",
-                    distance: "Variable",
-                    description: "À définir ensemble. Zones recommandées au-dessus de 2000m. Vérifiez la météo et régulations locales.",
-                    lat: 46.6333,
-                    lng: 12.3333
+                    duration: "Soirée / nuit",
+                    distance: "Sur place",
+                    description: "Gestion du camp, de l'eau et du lever de soleil dans le secteur de Mondeval.",
+                    lat: 46.4636,
+                    lng: 12.0957
                 }
             ]
         },
         {
             id: 10,
             date: "07/09",
-            title: "Jour 10 - Bivouac → Trieste",
+            title: "Jour 10 - Bivouac Lago delle Baste → Trieste",
             accommodation: {
                 name: "Villa Bella Vista",
                 location: "Trieste, Friuli-Venezia Giulia",
