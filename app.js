@@ -351,6 +351,17 @@ function renderTravelInfo(day) {
                 <em>${day.travelInfo.note}</em>
             </div>
         `;
+    } else if (day.previousAccommodation) {
+        const distanceText = day.previousAccommodation.distance || 'Distance a confirmer';
+        const durationText = day.previousAccommodation.duration || 'Duree a confirmer';
+        html = `
+            <div class="travel-info">
+                <strong>Info Trajet:</strong><br/>
+                ${day.previousAccommodation.name} -> ${day.accommodation.location}<br/>
+                Distance: ${distanceText} | Duree: <strong>${durationText}</strong><br/>
+                <em>Jour de transition entre deux logements.</em>
+            </div>
+        `;
     }
 
     const dayStart = getDayStartLocation(day);
