@@ -274,8 +274,8 @@ const roadTripData = {
             accommodation: {
                 name: "Camping Marmolada",
                 location: "Canazei, Trentin-Haut-Adige",
-                lat: 46.4500,
-                lng: 11.9800,
+                lat: 46.4256,
+                lng: 11.9043,
                 type: "Camping"
             },
             nextAccommodation: {
@@ -330,8 +330,8 @@ const roadTripData = {
                     duration: "1-2h",
                     distance: "100 km route",
                     description: "Installation au camping. Visite du charmant village de Canazei.",
-                    lat: 46.4500,
-                    lng: 11.9800
+                    lat: 46.4256,
+                    lng: 11.9043
                 }
             ]
         },
@@ -342,8 +342,8 @@ const roadTripData = {
             accommodation: {
                 name: "Camping Marmolada",
                 location: "Canazei, Trentin-Haut-Adige",
-                lat: 46.4500,
-                lng: 11.9800,
+                lat: 46.4256,
+                lng: 11.9043,
                 type: "Camping"
             },
             activities: [
