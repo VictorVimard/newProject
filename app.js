@@ -3,6 +3,7 @@ let directionsRenderer;
 let selectedActivities = [];
 let currentDay = 1;
 let currentMarkers = [];
+let currentView = 'explore';
 const DAILY_TIME_BUDGET_MINUTES = 8 * 60;
 const STORAGE_KEY = 'roadtrip_selection_state_v1';
 let daySelections = {};
@@ -37,6 +38,7 @@ function init() {
     loadGoogleMapsApi()
         .then(() => {
             renderDaysList();
+            updateViewState();
             initMap();
             selectDay(1);
         })
@@ -46,6 +48,7 @@ function init() {
                 mapNode.innerHTML = '<div style="padding:16px;color:#b00020;font-weight:600;">Carte indisponible: clé API Google Maps manquante.</div>';
             }
             renderDaysList();
+            updateViewState();
             selectDay(1);
         });
 }
@@ -282,6 +285,37 @@ function selectDay(dayId) {
 
     clearMap();
     renderChains();
+    renderPlanningView();
+    updateViewState();
+}
+
+function setView(viewName) {
+    currentView = viewName === 'planning' ? 'planning' : 'explore';
+    updateViewState();
+
+    if (currentView === 'planning') {
+        renderPlanningView();
+    }
+}
+
+function updateViewState() {
+    const exploreTab = document.getElementById('exploreTab');
+    const planningTab = document.getElementById('planningTab');
+    const exploreView = document.getElementById('exploreView');
+    const planningView = document.getElementById('planningView');
+
+    if (exploreTab) {
+        exploreTab.classList.toggle('active', currentView === 'explore');
+    }
+    if (planningTab) {
+        planningTab.classList.toggle('active', currentView === 'planning');
+    }
+    if (exploreView) {
+        exploreView.classList.toggle('active', currentView === 'explore');
+    }
+    if (planningView) {
+        planningView.classList.toggle('active', currentView === 'planning');
+    }
 }
 
 function renderAccommodationInfo(day) {
@@ -499,6 +533,7 @@ function toggleActivitySelection(activityId) {
     renderDaysList();
     renderActivities(day);
     renderChains();
+    renderPlanningView();
 
     if (isSelected) {
         resetMapToDayStart(day);
@@ -754,6 +789,7 @@ function optimizeSelectedActivitiesOrder() {
     persistPlanningState();
     renderActivities(day);
     renderChains();
+    renderPlanningView();
     showChainRouteOnMap();
 }
 
@@ -810,6 +846,96 @@ function renderChains() {
             </div>
         </div>
     `;
+}
+
+function getPlanningTravelSummary(day) {
+    if (day.travelInfo) {
+        return `${day.travelInfo.from} -> ${day.accommodation.location} | ${day.travelInfo.distance} | ${day.travelInfo.duration}`;
+    }
+
+    const dayStart = getDayStartLocation(day);
+    if (dayStart.name !== day.accommodation.name) {
+        return `${dayStart.name} -> ${day.accommodation.name}`;
+    }
+
+    return `Journee basee a ${day.accommodation.location}`;
+}
+
+function renderPlanningView() {
+    const planningView = document.getElementById('planningView');
+    if (!planningView) {
+        return;
+    }
+
+    if (!roadTripData.days || roadTripData.days.length === 0) {
+        planningView.innerHTML = '<div class="planning-empty">Aucun jour disponible dans le planning.</div>';
+        return;
+    }
+
+    const cardsHtml = roadTripData.days.map((day) => {
+        const selectedCount = getSelectedActivitiesForDay(day.id).length;
+        const totalActivities = Array.isArray(day.activities) ? day.activities.length : 0;
+        const travelSummary = getPlanningTravelSummary(day);
+        const dayStart = getDayStartLocation(day);
+
+        const travelCard = day.travelInfo
+            ? `
+                <div class="planning-item travel">
+                    <div class="planning-item-title">Trajet du jour</div>
+                    <div class="planning-item-meta">${day.travelInfo.distance} | ${day.travelInfo.duration}</div>
+                    <div class="planning-item-desc">${day.travelInfo.from} -> ${day.accommodation.location}. ${day.travelInfo.note || ''}</div>
+                </div>
+            `
+            : '';
+
+        const activitiesHtml = totalActivities
+            ? day.activities.map((activity, index) => {
+                const metaParts = [activity.duration, activity.distance].filter(Boolean);
+                if (activity.difficulty) {
+                    metaParts.push(activity.difficulty);
+                }
+
+                return `
+                    <div class="planning-item">
+                        <div class="planning-item-title">${index + 1}. ${activity.name}</div>
+                        <div class="planning-item-meta">${metaParts.join(' | ')}</div>
+                        <div class="planning-item-desc">${activity.description}</div>
+                    </div>
+                `;
+            }).join('')
+            : '<div class="planning-item"><div class="planning-item-desc">Aucune activite renseignee.</div></div>';
+
+        return `
+            <article class="planning-day ${day.id === currentDay ? 'active' : ''}">
+                <div class="planning-day-header">
+                    <div>
+                        <div class="planning-day-date">${day.date}</div>
+                        <div class="planning-day-title">Jour ${day.id}</div>
+                        <div class="planning-day-subtitle">${day.title}</div>
+                    </div>
+                </div>
+                <div class="planning-summary-row">
+                    <span class="planning-pill">Depart: ${dayStart.name}</span>
+                    <span class="planning-pill">Nuit: ${day.accommodation.name}</span>
+                    <span class="planning-pill">Activites: ${totalActivities}</span>
+                    <span class="planning-pill">Planifiees: ${selectedCount}</span>
+                </div>
+                <div class="planning-route">${travelSummary}</div>
+                <div class="planning-day-body">
+                    ${travelCard}
+                    ${activitiesHtml}
+                </div>
+                <button class="btn btn-info planning-open-btn" onclick="openPlanningDay(${day.id})">Ouvrir ce jour</button>
+            </article>
+        `;
+    }).join('');
+
+    planningView.innerHTML = `<div class="planning-grid">${cardsHtml}</div>`;
+}
+
+function openPlanningDay(dayId) {
+    selectDay(dayId);
+    setView('explore');
 }
 
 function showChainRouteOnMap() {
