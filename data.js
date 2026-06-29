@@ -270,7 +270,7 @@ const roadTripData = {
         {
             id: 5,
             date: "02/09",
-            title: "Jour 5 - Terlano -> Malga Ciapela",
+            title: "Jour 5 - Terlano -> Malga Ciapela (via Ortisei)",
             accommodation: {
                 name: "Camping Marmolada",
                 location: "Malga Ciapela, Rocca Pietore (BL)",
@@ -290,7 +290,7 @@ const roadTripData = {
                 from: "Art & Design Hotel Napura (Terlano)",
                 distance: "~85 km",
                 duration: "~1h45",
-                note: "Jour de transition vers Malga Ciapela avec possibilite de haltes panoramiques en route."
+                note: "Jour de transition vers Malga Ciapela avec passage possible par Ortisei pour faire Seceda et/ou Alpe di Siusi."
             },
             nextAccommodation: {
                 distance: "~55 km",
@@ -313,6 +313,48 @@ const roadTripData = {
                     walkRoute: "Passerelles autour du lac et points de vue forestiers",
                     walkDistance: "1.8 km",
                     walkDuration: "35 min"
+                },
+                {
+                    id: "5-5",
+                    name: "Seceda - Telepherique & cretes panoramiques (via Ortisei)",
+                    type: "hike",
+                    duration: "4-5h",
+                    distance: "Detour via Ortisei + 7.5 km marche",
+                    description: "Option forte du jour de transition: depart d'Ortisei, telepherique puis cretes de Seceda avant de reprendre la route vers Malga Ciapela.",
+                    lat: 46.5994,
+                    lng: 11.7281,
+                    difficulty: "Moderee",
+                    groupKey: "seceda-odle",
+                    reservation: true,
+                    reservationDetails: "Telepherique Ortisei-Seceda: verifier billets et horaires la veille.",
+                    parking: "Ortisei - parking village puis telepherique Seceda",
+                    parkingLat: 46.5756,
+                    parkingLng: 11.6713,
+                    walkRoute: "Arrivee Seceda -> crete panoramique -> points de vue Odle -> retour telepherique",
+                    walkDistance: "7.5 km",
+                    walkDuration: "3h",
+                    bookingUrl: "https://www.seceda.it/en/"
+                },
+                {
+                    id: "5-6",
+                    name: "Alpe di Siusi - Ortisei cable car (via Ortisei)",
+                    type: "hike",
+                    duration: "4-5h",
+                    distance: "Detour via Ortisei + 7 km marche",
+                    description: "Alternative a Seceda sur le meme passage par Ortisei. Prairie panoramique plus douce avant de redescendre vers Malga Ciapela.",
+                    lat: 46.5660,
+                    lng: 11.7043,
+                    difficulty: "Facile",
+                    groupKey: "alpe-di-siusi",
+                    reservation: true,
+                    reservationDetails: "Montee conseillee via Ortisei/Seiser Alm Bahn pour eviter les restrictions d'acces routier sur l'Alpe di Siusi.",
+                    parking: "Ortisei / St. Ulrich - parking telepherique Alpe di Siusi",
+                    parkingLat: 46.5749,
+                    parkingLng: 11.6732,
+                    walkRoute: "Station amont -> prairies de l'Alpe -> points de vue Sassolungo -> retour",
+                    walkDistance: "7 km",
+                    walkDuration: "2h30",
+                    bookingUrl: "https://www.seiseralm.it/en/"
                 },
                 {
                     id: "5-2",
