@@ -270,17 +270,31 @@ const roadTripData = {
         {
             id: 5,
             date: "02/09",
-            title: "Jour 5 - Terlano → Canazei",
+            title: "Jour 5 - Terlano -> Malga Ciapela",
             accommodation: {
                 name: "Camping Marmolada",
-                location: "Canazei, Trentin-Haut-Adige",
+                location: "Malga Ciapela, Rocca Pietore (BL)",
                 lat: 46.4256,
                 lng: 11.9043,
                 type: "Camping"
             },
+            previousAccommodation: {
+                name: "Art & Design Hotel Napura",
+                location: "Terlano",
+                lat: 46.4667,
+                lng: 11.3333,
+                distance: "~85 km",
+                duration: "~1h45"
+            },
+            travelInfo: {
+                from: "Art & Design Hotel Napura (Terlano)",
+                distance: "~85 km",
+                duration: "~1h45",
+                note: "Jour de transition vers Malga Ciapela avec possibilite de haltes panoramiques en route."
+            },
             nextAccommodation: {
-                distance: "~100 km",
-                duration: "~2h"
+                distance: "~55 km",
+                duration: "~1h20"
             },
             activities: [
                 {
@@ -328,8 +342,8 @@ const roadTripData = {
                     name: "Découverte du camping & Canazei",
                     type: "site",
                     duration: "1-2h",
-                    distance: "100 km route",
-                    description: "Installation au camping. Visite du charmant village de Canazei.",
+                    distance: "Trajet du jour + installation",
+                    description: "Installation au camping de Malga Ciapela et balade douce dans le secteur en fin de journee.",
                     lat: 46.4256,
                     lng: 11.9043
                 }
@@ -338,10 +352,10 @@ const roadTripData = {
         {
             id: 6,
             date: "03/09",
-            title: "Jour 6 - Exploration Canazei et Val di Fassa",
+            title: "Jour 6 - Exploration Marmolada & Dolomites Est",
             accommodation: {
                 name: "Camping Marmolada",
-                location: "Canazei, Trentin-Haut-Adige",
+                location: "Malga Ciapela, Rocca Pietore (BL)",
                 lat: 46.4256,
                 lng: 11.9043,
                 type: "Camping"
